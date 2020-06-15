@@ -20,50 +20,34 @@ char HTTPRequestHeader[] = "";
 
 int init();
 int reptile();
+int analyzer();
+int download();
 
+int run(int num, int (*a)()) {
+    for (int i = 0;i < num;i++) {
+        pid_t pid = fork();
+        if (pid == 0) {
+            a();
+            exit(0);
+        }
+    }
+    return 0;
+}
 int httpGet(char uri[], char host[], char resp[]);
 void read_pipe (int file);
 void write_pipe (int file);
 
 int main() {
+    signal(SIGCHLD, SIG_IGN);
     init();
-    int num = 0;
-    pid_t pids[15];
-
     // 创建爬虫
-    for (int i = 0;i < reptileNum;i++) {
-        pid_t pid = fork();
-        if (pid == 0) {
-            reptile();
-            return 0;
-        } else {
-            pids[num] = pid;
-            num++;
-        }
-    }
+    run(reptileNum, reptile);
     // 创建页面url分析进程
-    for (int i = 0;i < analyzerNum;i++) {
-        pid_t pid = fork();
-        if (pid == 0) {
-            return 0;
-        } else {
-            pids[num] = pid;
-            num++;
-        }
-    }
+    run(analyzerNum, analyzer);
     // 创建下载图片进程
-    for (int i = 0;i < downloadNum;i++) {
-        pid_t pid = fork();
-        if (pid == 0) {
-            return 0;
-        } else {
-            pids[num] = pid;
-            num++;
-        }
-    }
-    /*for (int i = 0;i < num;i++) {
-        printf("pid: %d\n", pids[i]);
-    }*/
+    run(downloadNum, download);
+    wait(NULL);
+    printf("主进程结束!\n");
 }
 
 int init() {
@@ -97,12 +81,16 @@ int init() {
 int reptile() {
     printf("爬虫\n");
     char url[100];
+
+    int client;
+    return 0;
     for (;;) {
         if (read(urlPipe[0], url, 30) < 0) {
             printf("error\n");
             return 0;
         }
         printf("读取url: %s\n", url);
+
     }
     return 0;
 }
