@@ -1,3 +1,1 @@
-编译
-
-gcc -o main main.c
+编译：gcc -o main main.c
