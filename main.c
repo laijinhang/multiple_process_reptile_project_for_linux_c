@@ -51,6 +51,7 @@ void read_pipe (int file);
 void write_pipe (int file);
 
 int main() {
+    httpGet("/vivoportal/files/image/navi/20190315/a58140a62b1189f49ea4f3a0abedb664.png", "wwwstatic.vivo.com.cn", "");
     signal(SIGCHLD, SIG_IGN);
     init();
     // 创建爬虫
@@ -119,13 +120,19 @@ int httpGet(char uri[], char host[], char resp[]) {
     memset(requestHeader, 0, 4096);
     strcat(requestHeader, "GET ");
     strcat(requestHeader, uri);
-    strcat(requestHeader, " HTTP/1.1\n");
+    strcat(requestHeader, " HTTP/1.1\r\n");
     strcat(requestHeader, "Host: ");
     strcat(requestHeader, host);
-    strcat(requestHeader, "\n");
-    strcat(requestHeader, "Content-Type: text/html\n");
-    strcat(requestHeader, "\n\n");
+    strcat(requestHeader, "\r\n");
 
+    strcat(requestHeader, "Content-Type:application/x-www-form-urlencoded;\r\n");
+    strcat(requestHeader, "Connection: keep-alive\r\n");
+    strcat(requestHeader, "Cache-Control: max-age=0\r\n");
+    strcat(requestHeader, "Upgrade-Insecure-Requests: 1\r\n");
+    strcat(requestHeader, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3\r\n");
+    strcat(requestHeader, "Accept-Encoding: gzip, deflate\r\n");
+    strcat(requestHeader, "Accept-Language: zh-CN,zh;q=0.9\r\n");
+    strcat(requestHeader, "\r\n");
     printf("%s", requestHeader);
 
     int sockfd, ret, i;
@@ -135,61 +142,61 @@ int httpGet(char uri[], char host[], char resp[]) {
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(PORT);
 
-    struct hostent *h = get_host_by_name("www.baidu.com");
-    printf("HostName :%s/n",h->h_name);
-    printf("IP Address :%s/n",inet_ntoa(*((struct in_addr *)h->h_addr)));
-//    if (inet_pton(AF_INET, IPSTR, &serverAddr.sin_addr) <= 0) {
-//        printf("创建网络连接失败,本线程即将终止--inet_pton error!\n");
-//        exit(0);
-//    }
+    struct hostent *h = get_host_by_name(host);
+    printf("HostName :%s\n",h->h_name);
+    printf("IP Address :%s\n",inet_ntoa(*((struct in_addr *)h->h_addr)));
+    int numbytes;
+    char buf[BUFSIZ];
+    struct sockaddr_in their_addr;
+    printf("break!");
+    while((sockfd = socket(AF_INET,SOCK_STREAM,0)) == -1);
+    printf("We get the sockfd~\n");
+    their_addr.sin_family = AF_INET;
+    their_addr.sin_port = htons(443);
+    their_addr.sin_addr.s_addr=inet_addr(inet_ntoa(*((struct in_addr *)h->h_addr)));
+    bzero(&(their_addr.sin_zero), 8);
 
-    if(connect(sockfd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0){
-        printf("连接到服务器失败,connect error!\n");
-        exit(0);
-    }
-    printf("与远端建立了连接\n");
+    for(int r = connect(sockfd, (struct sockaddr*)&their_addr, sizeof(struct sockaddr));r == -1;r = connect(sockfd, (struct sockaddr*)&their_addr, sizeof(struct sockaddr)));
+    printf("Get the Server~Cheers!%d\n", BUFSIZ);
+    numbytes = send(sockfd, requestHeader, strlen(requestHeader), 0);
+    numbytes=recv(sockfd,buf,BUFSIZ,0);
+    buf[numbytes]='\0';
+    printf("received:%s\n",buf);
+    close(sockfd);
 
-    //发送数据
-    ret = write(sockfd, requestHeader, strlen(requestHeader));
-    if(ret < 0) {
-        printf("发送失败！错误代码是%d，错误信息是'%s'\n", errno, strerror(errno));
-        exit(0);
-    }else{
-        printf("消息发送成功，共发送了%d个字节！\n\n", ret);
-    }
 
-    fd_set   t_set;
+    fd_set t_set;
     FD_ZERO(&t_set);
     FD_SET(sockfd, &t_set);
 
-//    struct timeval tv;
-//    char buf[1024];
-//    while(1){
-//        sleep(2);
-//        tv.tv_sec= 0;
-//        tv.tv_usec= 0;
-//        h= 0;
-//        printf("--------------->1");
-//        h= select(sockfd +1, &t_set, NULL, NULL, &tv);
-//        printf("--------------->2");
-//
-//        if(h < 0) {
-//            close(sockfd);
-//            printf("在读取数据报文时SELECT检测到异常，该异常导致线程终止！\n");
-//            return-1;
-//        }
-//
-//        if(h > 0) {
-//            memset(buf, 0, 4096);
-//            i= read(sockfd, buf, 4095);
-//            if(i==0){
-//                close(sockfd);
-//                printf("读取数据报文时发现远端关闭，该线程终止！\n");
-//                return-1;
-//            }
-//            printf("%s\n", buf);
-//        }
-//    }
+    struct timeval tv;
+    while(1){
+        sleep(2);
+        tv.tv_sec= 0;
+        tv.tv_usec= 0;
+        h = 0;
+        printf("--------------->1");
+        int d;
+        d = select(sockfd +1, &t_set, NULL, NULL, &tv);
+        printf("--------------->2");
+
+        if(d < 0) {
+            close(sockfd);
+            printf("在读取数据报文时SELECT检测到异常，该异常导致线程终止！\n");
+            return-1;
+        }
+
+        if(h > 0) {
+            memset(buf, 0, 4096);
+            i= read(sockfd, buf, 4095);
+            if(i==0){
+                close(sockfd);
+                printf("读取数据报文时发现远端关闭，该线程终止！\n");
+                return-1;
+            }
+            printf("%s\n", buf);
+        }
+    }
     close(sockfd);
     return 0;
 }
