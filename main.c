@@ -54,7 +54,6 @@ void write_pipe (int file);
 int main() {
     httpGet("/vivoportal/files/image/navi/20190315/a58140a62b1189f49ea4f3a0abedb664.png", "wwwstatic.vivo.com.cn", "");
     signal(SIGCHLD, SIG_IGN);
-    return 0;
     init();
     // 创建爬虫
     run(reptileNum, reptile);
